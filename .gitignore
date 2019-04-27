@@ -105,6 +105,9 @@ ipch/
 *.vspx
 *.sap
 
+# BOT files = MS Bot Framework
+*.bot
+
 # Visual Studio Trace Files
 *.e2e
 
