@@ -7,6 +7,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Configuration;
 using Microsoft.Bot.Connector.Authentication;
@@ -36,21 +37,8 @@ namespace Essenbee.ChatBox
             Configuration = builder.Build();
         }
 
-        /// <summary>
-        /// Gets the configuration that represents a set of key/value application configuration properties.
-        /// </summary>
-        /// <value>
-        /// The <see cref="IConfiguration"/> that represents a set of key/value application configuration properties.
-        /// </value>
         public IConfiguration Configuration { get; }
 
-        /// <summary>
-        /// This method gets called by the runtime. Use this method to add services to the container.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection"/> specifies the contract for a collection of service descriptors.</param>
-        /// <seealso cref="IStatePropertyAccessor{T}"/>
-        /// <seealso cref="https://docs.microsoft.com/en-us/aspnet/web-api/overview/advanced/dependency-injection"/>
-        /// <seealso cref="https://docs.microsoft.com/en-us/azure/bot-service/bot-service-manage-channels?view=azure-bot-service-4.0"/>
         public void ConfigureServices(IServiceCollection services)
         {
             var secretKey = Configuration.GetSection("botFileSecret")?.Value;
@@ -92,31 +80,26 @@ namespace Essenbee.ChatBox
                 throw new InvalidOperationException($"The .bot file does not contain an endpoint with name '{environment}'.");
             }
 
-            // Memory Storage is for local bot debugging only. When the bot
-            // is restarted, everything stored in memory will be gone.
+            // Memory Storage is for local bot debugging only.
             IStorage dataStore = new MemoryStorage();
-
-            // For production bots use the Azure Blob or
-            // Azure CosmosDB storage providers. For the Azure
-            // based storage providers, add the Microsoft.Bot.Builder.Azure
-            // Nuget package to your solution. That package is found at:
-            // https://www.nuget.org/packages/Microsoft.Bot.Builder.Azure/
-            // Un-comment the following lines to use Azure Blob Storage
-            // // Storage configuration name or ID from the .bot file.
-            // const string StorageConfigurationId = "<STORAGE-NAME-OR-ID-FROM-BOT-FILE>";
-            // var blobConfig = botConfig.FindServiceByNameOrId(StorageConfigurationId);
-            // if (!(blobConfig is BlobStorageService blobStorageConfig))
-            // {
-            //    throw new InvalidOperationException($"The .bot file does not contain an blob storage with name '{StorageConfigurationId}'.");
-            // }
-            // // Default container name.
-            // const string DefaultBotContainer = "<DEFAULT-CONTAINER>";
-            // var storageContainer = string.IsNullOrWhiteSpace(blobStorageConfig.Container) ? DefaultBotContainer : blobStorageConfig.Container;
-            // IStorage dataStore = new Microsoft.Bot.Builder.Azure.AzureBlobStorage(blobStorageConfig.ConnectionString, storageContainer);
 
             // Create and add conversation state.
             var conversationState = new ConversationState(dataStore);
+            var userState = new UserState(dataStore);
+
             services.AddSingleton(conversationState);
+
+            services.AddSingleton<ChatBoxAccessors>( x =>
+            {
+                var accessors = new ChatBoxAccessors(conversationState, userState)
+                {
+                    CounterState = conversationState.CreateProperty<CounterState>(ChatBoxAccessors.CounterStateName),
+                    ConversationDialogState = conversationState.CreateProperty<DialogState>(ChatBoxAccessors.DialogStateName),
+                    UserSelectionsState = userState.CreateProperty<UserSelections>(ChatBoxAccessors.UserSelectionsStateName),
+                };
+
+                return accessors;
+            });
 
             services.AddBot<ChatBoxBot>(options =>
            {
