@@ -5,6 +5,7 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -87,6 +88,8 @@ namespace Essenbee.ChatBox
                 var dialogContext = await _dialogs.CreateContextAsync(turnContext, cancellationToken);
                 var results = await dialogContext.ContinueDialogAsync(cancellationToken);
 
+                var channelData = JObject.Parse(turnContext.Activity.ChannelData.ToString());
+
                 var userChoice = turnContext.Activity.Text;
                 var responseMessage = $"You chose: '{turnContext.Activity.Text}'\n";
 
@@ -123,9 +126,13 @@ namespace Essenbee.ChatBox
                         await DisplayMainMenuAsync(turnContext, cancellationToken);
                         break;
                     case DialogTurnStatus.Waiting:
-
+                        // Active dialog, so do nothing
                         break;
                     case DialogTurnStatus.Complete:
+                        var userSelections = results.Result as UserSelections;
+                        await _accessors.UserSelectionsState.SetAsync(turnContext, userSelections, cancellationToken);
+                        await _accessors.UserState.SaveChangesAsync(turnContext, false, cancellationToken);
+                        
                         await DisplayMainMenuAsync(turnContext, cancellationToken);
                         break;
                 }
