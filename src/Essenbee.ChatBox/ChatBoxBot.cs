@@ -15,8 +15,12 @@ namespace Essenbee.ChatBox
 {
     public class ChatBoxBot : IBot
     {
-        private string propertyName;
-        private readonly ChatBoxAccessors _accessors;
+        public IStatePropertyAccessor<DialogState> ConversationDialogState { get; set; }
+        public IStatePropertyAccessor<UserSelections> UserSelectionsState { get; set; }
+
+        //private readonly ChatBoxAccessors _accessors;
+        private readonly ConversationState _converationState;
+        private readonly UserState _userState;
         private readonly ILogger _logger;
         private DialogSet _dialogs;
 
@@ -25,7 +29,7 @@ namespace Essenbee.ChatBox
                                         live coding streams on Twitch!";
 
 
-        public ChatBoxBot(ConversationState conversationState, ChatBoxAccessors accessors,
+        public ChatBoxBot(ConversationState conversationState, UserState userState,
             ILoggerFactory loggerFactory)
         {
             if (conversationState == null)
@@ -38,11 +42,16 @@ namespace Essenbee.ChatBox
                 throw new System.ArgumentNullException(nameof(loggerFactory));
             }
 
+            _userState = userState;
+            _converationState = conversationState;
+            ConversationDialogState = _converationState.CreateProperty<DialogState>($"{nameof(ChatBox)}.ConversationDialogState");
+            UserSelectionsState = _converationState.CreateProperty<UserSelections>($"{nameof(ChatBox)}.UserSelectionsState");
+
             _logger = loggerFactory.CreateLogger<ChatBoxBot>();
             _logger.LogTrace("Turn start.");
-            _accessors = accessors;
+            //_accessors = accessors;
 
-            _dialogs = new DialogSet(_accessors.ConversationDialogState);
+            _dialogs = new DialogSet(ConversationDialogState);
 
             var dummySteps = new WaterfallStep[]
             {
@@ -62,7 +71,7 @@ namespace Essenbee.ChatBox
 
         private async Task<DialogTurnResult> GetStreamerInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var userSelections = await _accessors.UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
+            var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
             userSelections.StreamerName = (string)stepContext.Result;
 
             // ToDo: get the data from GraphQL endpoint
@@ -75,6 +84,9 @@ namespace Essenbee.ChatBox
 
         private async Task<DialogTurnResult> GetStreamerNameStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
+            var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
+            await UserSelectionsState.SetAsync(stepContext.Context, userSelections, cancellationToken);
+
             return await stepContext.PromptAsync("streamer-name", new PromptOptions
             {
                 Prompt = MessageFactory.Text("Please enter the name of the streamer you are interested in") }, 
@@ -129,31 +141,16 @@ namespace Essenbee.ChatBox
                         await dialogContext.ContinueDialogAsync(cancellationToken);
                         break;
                     case DialogTurnStatus.Complete:
-                        var userSelections = results.Result as UserSelections;
-                        await _accessors.UserSelectionsState.SetAsync(turnContext, userSelections, cancellationToken);
-                        await _accessors.UserState.SaveChangesAsync(turnContext, false, cancellationToken);
+                        await _userState.SaveChangesAsync(turnContext, false, cancellationToken);
                         
                         await DisplayMainMenuAsync(turnContext, cancellationToken);
                         break;
                 }
 
-
-
-
-
-
-
-                // Get the conversation state from the turn context.
-                var state = await _accessors.CounterState.GetAsync(turnContext, () => new CounterState());
-
-                // Bump the turn count for this conversation.
-                state.TurnCount++;
-
-                // Set the property using the accessor.
-                await _accessors.CounterState.SetAsync(turnContext, state);
-
                 // Save the new turn count into the conversation state.
-                await _accessors.ConversationState.SaveChangesAsync(turnContext);
+                await _converationState.SaveChangesAsync(turnContext);
+                await _userState.SaveChangesAsync(turnContext, false, cancellationToken);
+                // var userSelections = await UserSelectionsState.GetAsync(turnContext, () => new UserSelections(), cancellationToken);
             }
             else if (turnContext.Activity.Type == ActivityTypes.ConversationUpdate)
             {

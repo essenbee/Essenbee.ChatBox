@@ -88,18 +88,7 @@ namespace Essenbee.ChatBox
             var userState = new UserState(dataStore);
 
             services.AddSingleton(conversationState);
-
-            services.AddSingleton<ChatBoxAccessors>( x =>
-            {
-                var accessors = new ChatBoxAccessors(conversationState, userState)
-                {
-                    CounterState = conversationState.CreateProperty<CounterState>(ChatBoxAccessors.CounterStateName),
-                    ConversationDialogState = conversationState.CreateProperty<DialogState>(ChatBoxAccessors.DialogStateName),
-                    UserSelectionsState = userState.CreateProperty<UserSelections>(ChatBoxAccessors.UserSelectionsStateName),
-                };
-
-                return accessors;
-            });
+            services.AddSingleton(userState);
 
             services.AddBot<ChatBoxBot>(options =>
            {
