@@ -126,7 +126,7 @@ namespace Essenbee.ChatBox
                         await DisplayMainMenuAsync(turnContext, cancellationToken);
                         break;
                     case DialogTurnStatus.Waiting:
-                        // Active dialog, so do nothing
+                        await dialogContext.ContinueDialogAsync(cancellationToken);
                         break;
                     case DialogTurnStatus.Complete:
                         var userSelections = results.Result as UserSelections;
