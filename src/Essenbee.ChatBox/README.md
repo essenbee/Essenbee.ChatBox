@@ -56,10 +56,10 @@ There are a small set of CLI tools that will automate the process of deploying t
 developers to test and debug their bots on localhost or running remotely through a tunnel.
 - Install the [Bot Framework emulator][6].
 
-## Connect to bot using Bot Framework Emulator **V4**
+## Connect to bot using Bot Framework Emulator **V4.4**
 - Launch the Bot Framework Emulator.
 - Tap the `Open Bot` button.
-- In the dialog box, rovide the URL where the bot is running locally, adding `/api/messages` to the URL.
+- In the dialog box, provide the URL where the bot is running locally, adding `/api/messages` to the URL.
 - Tap `Connect`.
 
 # Deploy the bot to Azure
