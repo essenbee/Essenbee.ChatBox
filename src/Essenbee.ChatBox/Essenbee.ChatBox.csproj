@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <UserSecretsId>d81d1743-0b72-4ed1-8335-a8d8c231add1</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,9 +11,6 @@
 
   <ItemGroup>
     <Content Include="ChatBoxbot.local">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ChatBox.bot">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
