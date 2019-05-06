@@ -1,6 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-
+﻿using Essenbee.ChatBox.Dialogs;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
@@ -18,7 +16,6 @@ namespace Essenbee.ChatBox
         public IStatePropertyAccessor<DialogState> ConversationDialogState { get; set; }
         public IStatePropertyAccessor<UserSelections> UserSelectionsState { get; set; }
 
-        //private readonly ChatBoxAccessors _accessors;
         private readonly ConversationState _converationState;
         private readonly UserState _userState;
         private readonly ILogger _logger;
@@ -45,11 +42,10 @@ namespace Essenbee.ChatBox
             _userState = userState;
             _converationState = conversationState;
             ConversationDialogState = _converationState.CreateProperty<DialogState>($"{nameof(ChatBox)}.ConversationDialogState");
-            UserSelectionsState = _converationState.CreateProperty<UserSelections>($"{nameof(ChatBox)}.UserSelectionsState");
+            UserSelectionsState = _userState.CreateProperty<UserSelections>($"{nameof(ChatBox)}.UserSelectionsState");
 
             _logger = loggerFactory.CreateLogger<ChatBoxBot>();
             _logger.LogTrace("Turn start.");
-            //_accessors = accessors;
 
             _dialogs = new DialogSet(ConversationDialogState);
 
@@ -58,39 +54,9 @@ namespace Essenbee.ChatBox
                 DummyStepAsync,
             };
 
-            var whenNextSteps = new WaterfallStep[]
-            {
-                GetStreamerNameStepAsync,
-                GetStreamerInfoStepAsync,
-            };
-
+            _dialogs.Add(new WhenNextDialog("whenNextIntent", UserSelectionsState));
+            _dialogs.Add(new SetTimezoneDialog("setTimezoneIntent", UserSelectionsState));
             _dialogs.Add(new WaterfallDialog("dummy", dummySteps));
-            _dialogs.Add(new WaterfallDialog("whenNextIntent", whenNextSteps));
-            _dialogs.Add(new TextPrompt("streamer-name"));
-        }
-
-        private async Task<DialogTurnResult> GetStreamerInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-            var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
-            userSelections.StreamerName = (string)stepContext.Result;
-
-            // ToDo: get the data from GraphQL endpoint
-
-            await stepContext.Context.SendActivityAsync(MessageFactory.Text($"You selected {userSelections.StreamerName}"), 
-                cancellationToken);
-
-            return await stepContext.EndDialogAsync(cancellationToken);
-        }
-
-        private async Task<DialogTurnResult> GetStreamerNameStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-            var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
-            await UserSelectionsState.SetAsync(stepContext.Context, userSelections, cancellationToken);
-
-            return await stepContext.PromptAsync("streamer-name", new PromptOptions
-            {
-                Prompt = MessageFactory.Text("Please enter the name of the streamer you are interested in") }, 
-                cancellationToken);
         }
 
         public async Task OnTurnAsync(ITurnContext turnContext, CancellationToken cancellationToken = default(CancellationToken))
@@ -101,6 +67,13 @@ namespace Essenbee.ChatBox
                 var results = await dialogContext.ContinueDialogAsync(cancellationToken);
 
                 var channelData = JObject.Parse(turnContext.Activity.ChannelData.ToString());
+
+                if (channelData.ContainsKey("postBack"))
+                {
+                    // This is from an adaptive card postback
+                    var activity = turnContext.Activity;
+                    activity.Text = activity.Value.ToString();
+                }
 
                 var userChoice = turnContext.Activity.Text;
                 var responseMessage = $"You chose: '{turnContext.Activity.Text}'\n";
@@ -123,7 +96,7 @@ namespace Essenbee.ChatBox
                                     await dialogContext.BeginDialogAsync("dummy", cancellationToken);
                                     break;
                                 case "4":
-                                    await dialogContext.BeginDialogAsync("dummy", cancellationToken);
+                                    await dialogContext.BeginDialogAsync("setTimezoneIntent", cancellationToken);
                                     break;
                                 default:
                                     await turnContext.SendActivityAsync("Please select a menu option");
@@ -147,7 +120,6 @@ namespace Essenbee.ChatBox
                         break;
                 }
 
-                // Save the new turn count into the conversation state.
                 await _converationState.SaveChangesAsync(turnContext);
                 await _userState.SaveChangesAsync(turnContext, false, cancellationToken);
                 // var userSelections = await UserSelectionsState.GetAsync(turnContext, () => new UserSelections(), cancellationToken);
@@ -181,17 +153,21 @@ namespace Essenbee.ChatBox
 
         private static async Task DisplayMainMenuAsync(ITurnContext turnContext, CancellationToken cancellationToken)
         {
-            var reply = turnContext.Activity.CreateReply("What would you like to do?");
-            reply.SuggestedActions = new SuggestedActions
+            var heroCard = new HeroCard
             {
-                Actions = new List<CardAction>
+                Title = "DevStreams Chat Box",
+                Subtitle = "What would you like to do?",
+                Buttons = new List<CardAction>
                 {
-                    new CardAction { Title = "1. ", Type = ActionTypes.ImBack, Value = "1" },
-                    new CardAction { Title = "2. ", Type = ActionTypes.ImBack, Value = "2" },
-                    new CardAction { Title = "3. ", Type = ActionTypes.ImBack, Value = "3" },
-                    new CardAction { Title = "4. Help", Type = ActionTypes.ImBack, Value = "4" },
+                    new CardAction { Title = "1. Find out who is live now", Type = ActionTypes.ImBack, Value = "1" },
+                    new CardAction { Title = "2. Find out when a streamer is broadcasting next", Type = ActionTypes.ImBack, Value = "2" },
+                    new CardAction { Title = "3. Discover live coding streams covering things I am interested in", Type = ActionTypes.ImBack, Value = "3" },
+                    new CardAction { Title = "4. Set/reset my time zone", Type = ActionTypes.ImBack, Value = "4" },
                 }
             };
+
+            var reply = turnContext.Activity.CreateReply();
+            reply.Attachments = new List<Attachment> { heroCard.ToAttachment() };
 
             await turnContext.SendActivityAsync(reply, cancellationToken);
         }

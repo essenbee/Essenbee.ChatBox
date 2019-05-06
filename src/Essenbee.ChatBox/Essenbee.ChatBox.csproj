@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AdaptiveCards" Version="1.1.2" />
     <PackageReference Include="Microsoft.AspNetCore.All" />
     <PackageReference Include="Microsoft.Bot.Builder" Version="4.4.0" />
     <PackageReference Include="Microsoft.Bot.Builder.Dialogs" Version="4.4.0" />
@@ -24,5 +25,6 @@
     <PackageReference Include="Microsoft.Bot.Connector" Version="4.4.0" />
     <PackageReference Include="Microsoft.Bot.Schema" Version="4.4.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.AzureAppServices" Version="2.2.0" />
+    <PackageReference Include="TimeZoneNames" Version="4.0.1" />
   </ItemGroup>
 </Project>
