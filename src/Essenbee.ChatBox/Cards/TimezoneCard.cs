@@ -3,7 +3,6 @@ using Microsoft.Bot.Schema;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using TimeZoneNames;
 
 namespace Essenbee.ChatBox.Cards

@@ -5,7 +5,6 @@ using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,7 +24,6 @@ namespace Essenbee.ChatBox
         private const string WelcomeMessage = @"Welcome to the ChatBox. 
                                         This bot can help you find out about 
                                         live coding streams on Twitch!";
-
 
         public ChatBoxBot(ConversationState conversationState, UserState userState, IChannelClient client,
             ILoggerFactory loggerFactory)
@@ -192,6 +190,5 @@ namespace Essenbee.ChatBox
                 SendActivityAsync(MessageFactory.Text($"You selected {selection}"), cancellationToken);
             return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
         }
-
     }
 }

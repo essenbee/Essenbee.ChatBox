@@ -1,11 +1,10 @@
-﻿using Essenbee.ChatBox.Core.Interfaces;
+﻿using Essenbee.ChatBox.Cards;
+using Essenbee.ChatBox.Core.Interfaces;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -68,42 +67,8 @@ namespace Essenbee.ChatBox.Dialogs
 
                 if (channel != null)
                 {
-                    var schedule = new StringBuilder();
-                    foreach (var day in channel.Schedule)
-                    {
-                        schedule.AppendLine($"{day.DayOfWeek}: {day.LocalStartTime} - {day.LocalEndTime}");
-                    }
-
-                    schedule.AppendLine();
-
-                    var nextStream = "current not recorded in Dev Streams";
-
-                    if (channel.NextStream.UtcStartTime.Date == DateTime.UtcNow.Date)
-                    {
-                        nextStream = string.Format("will be streaming next today at {0:h:mm tt}", channel.NextStream.LocalStartTime);
-                    }
-                    else if (channel.NextStream.UtcStartTime.Date == DateTime.UtcNow.Date.AddDays(1))
-                    {
-                        nextStream = string.Format("will be streaming next tomorrow at {0:h:mm tt}", channel.NextStream.LocalStartTime);
-                    }
-                    else
-                    {
-                        nextStream = string.Format("will be streaming next on {0:dddd, MMMM dd} at {0:h:mm tt}",
-                        channel.NextStream.LocalStartTime, channel.NextStream.LocalStartTime);
-                    }
-
-                    schedule.AppendLine($"**Next stream**: {nextStream}");
-
-                    var heroCard = new HeroCard
-                    {
-                        Title = $"{channel.Name}",
-                        Subtitle = $"Link: {channel.Uri}",
-                        Text = $"{schedule}",
-                    };
-
                     var reply = stepContext.Context.Activity.CreateReply();
-                    reply.Attachments = new List<Attachment> { heroCard.ToAttachment() };
-
+                    reply.Attachments = new List<Attachment> { ChannelDataCard.Create(channel) };
                     await stepContext.Context.SendActivityAsync(reply, cancellationToken);
                 }
                 else
@@ -112,9 +77,10 @@ namespace Essenbee.ChatBox.Dialogs
                         MessageFactory.Text($"I'm sorry, but I could not find {userSelections.StreamerName} in the Dev Streams database"));
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                var x = ex;
+                await stepContext.Context.SendActivityAsync(
+                        MessageFactory.Text($"I'm sorry, but I am having problems talking to the Dev Streams database."));
             }
 
             return await stepContext.EndDialogAsync(cancellationToken);
