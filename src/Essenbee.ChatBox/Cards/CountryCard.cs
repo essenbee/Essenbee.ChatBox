@@ -41,6 +41,7 @@ namespace Essenbee.ChatBox.Cards
                 Id = "country",
                 Style = AdaptiveChoiceInputStyle.Compact,
                 Choices = choices,
+                Value = "US",
             });
 
             adaptiveCard.Body.Add(container);

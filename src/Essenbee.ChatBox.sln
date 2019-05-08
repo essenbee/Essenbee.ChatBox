@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28803.202
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Essenbee.ChatBox", "Essenbee.ChatBox\Essenbee.ChatBox.csproj", "{EF2FDA7C-3263-4A59-910E-A3429C82B063}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Essenbee.ChatBox", "Essenbee.ChatBox\Essenbee.ChatBox.csproj", "{EF2FDA7C-3263-4A59-910E-A3429C82B063}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Essenbee.ChatBox.Core", "Essenbee.CahtBox.Core\Essenbee.ChatBox.Core.csproj", "{C003737A-60F0-42F0-A56A-6CB07814C9E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Essenbee.ChatBox.Clients.GraphQL", "Essenbee.ChatBox.Clients.GraphQL\Essenbee.ChatBox.Clients.GraphQL.csproj", "{F039EC5F-4EA4-48F8-BA89-B7A2C7239C89}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{EF2FDA7C-3263-4A59-910E-A3429C82B063}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EF2FDA7C-3263-4A59-910E-A3429C82B063}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EF2FDA7C-3263-4A59-910E-A3429C82B063}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C003737A-60F0-42F0-A56A-6CB07814C9E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C003737A-60F0-42F0-A56A-6CB07814C9E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C003737A-60F0-42F0-A56A-6CB07814C9E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C003737A-60F0-42F0-A56A-6CB07814C9E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F039EC5F-4EA4-48F8-BA89-B7A2C7239C89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F039EC5F-4EA4-48F8-BA89-B7A2C7239C89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F039EC5F-4EA4-48F8-BA89-B7A2C7239C89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F039EC5F-4EA4-48F8-BA89-B7A2C7239C89}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

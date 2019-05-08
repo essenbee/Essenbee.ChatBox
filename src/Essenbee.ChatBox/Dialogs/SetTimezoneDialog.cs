@@ -23,7 +23,7 @@ namespace Essenbee.ChatBox.Dialogs
             {
                 GetUsersCountryStepAsync,
                 GetUsersTimezoneStepAsync,
-                ConfirmationStepAsync,
+                PersistDataStepAsync,
             };
 
             AddDialog(new WaterfallDialog("setTimezoneIntent", setTimezoneSteps));
@@ -78,7 +78,7 @@ namespace Essenbee.ChatBox.Dialogs
                 cancellationToken);
         }
 
-        private async Task<DialogTurnResult> ConfirmationStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> PersistDataStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
             var timezoneJson = JObject.Parse((string)stepContext.Result);
@@ -89,9 +89,6 @@ namespace Essenbee.ChatBox.Dialogs
             }
 
             await UserSelectionsState.SetAsync(stepContext.Context, userSelections, cancellationToken);
-
-            await stepContext.Context.SendActivityAsync(MessageFactory.Text($"You selected time zone {userSelections.TimeZone}"),
-                cancellationToken);
 
             return await stepContext.EndDialogAsync();
         }

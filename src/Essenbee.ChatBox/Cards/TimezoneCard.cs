@@ -24,16 +24,28 @@ namespace Essenbee.ChatBox.Cards
 
             var choices = new List<AdaptiveChoice>();
             var timezones = TZNames.GetTimeZonesForCountry(countryCode, "en-us");
-
-            foreach (var timezone in timezones)
+            var defaultChoice = new AdaptiveChoice
             {
-                var choice = new AdaptiveChoice
-                {
-                    Title = timezone.Value,
-                    Value = timezone.Key,
-                };
+                Title = "Universal Co-ordinated Time",
+                Value = "Etc/GMT",
+            };
 
-                choices.Add(choice);
+            if (timezones.Any())
+            {
+                foreach (var timezone in timezones)
+                {
+                    var choice = new AdaptiveChoice
+                    {
+                        Title = timezone.Value,
+                        Value = timezone.Key,
+                    };
+
+                    choices.Add(choice);
+                }
+            }
+            else
+            {
+                choices.Add(defaultChoice);
             }
 
             container.Items.Add(new AdaptiveChoiceSetInput
@@ -41,6 +53,7 @@ namespace Essenbee.ChatBox.Cards
                 Id = "tz",
                 Style = AdaptiveChoiceInputStyle.Compact,
                 Choices = choices,
+                Value = choices.First().Value,
             });
 
             adaptiveCard.Body.Add(container);

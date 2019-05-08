@@ -1,4 +1,5 @@
-﻿using Essenbee.ChatBox.Dialogs;
+﻿using Essenbee.ChatBox.Core.Interfaces;
+using Essenbee.ChatBox.Dialogs;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
@@ -26,7 +27,7 @@ namespace Essenbee.ChatBox
                                         live coding streams on Twitch!";
 
 
-        public ChatBoxBot(ConversationState conversationState, UserState userState,
+        public ChatBoxBot(ConversationState conversationState, UserState userState, IChannelClient client,
             ILoggerFactory loggerFactory)
         {
             if (conversationState == null)
@@ -54,7 +55,7 @@ namespace Essenbee.ChatBox
                 DummyStepAsync,
             };
 
-            _dialogs.Add(new WhenNextDialog("whenNextIntent", UserSelectionsState));
+            _dialogs.Add(new WhenNextDialog("whenNextIntent", UserSelectionsState, client));
             _dialogs.Add(new SetTimezoneDialog("setTimezoneIntent", UserSelectionsState));
             _dialogs.Add(new WaterfallDialog("dummy", dummySteps));
         }
@@ -142,7 +143,7 @@ namespace Essenbee.ChatBox
             }
         }
 
-        private static async Task SendWelcomeMessageAsync(ITurnContext turnContext, CancellationToken cancellationToken)
+        private async Task SendWelcomeMessageAsync(ITurnContext turnContext, CancellationToken cancellationToken)
         {
             foreach (var member in turnContext.Activity.MembersAdded)
             {
@@ -156,12 +157,19 @@ namespace Essenbee.ChatBox
             }
         }
 
-        private static async Task DisplayMainMenuAsync(ITurnContext turnContext, CancellationToken cancellationToken)
+        private async Task DisplayMainMenuAsync(ITurnContext turnContext, CancellationToken cancellationToken)
         {
+            var userSelections = await UserSelectionsState.GetAsync(turnContext, () => new UserSelections(), cancellationToken);
+
+            var selectedTimeZone = !string.IsNullOrWhiteSpace(userSelections.TimeZone) 
+                ? $"**{userSelections.TimeZone}**"
+                : "-";
+
             var heroCard = new HeroCard
             {
                 Title = "DevStreams Chat Box",
                 Subtitle = "What would you like to do?",
+                Text = $"Your selected time zone: {selectedTimeZone}",
                 Buttons = new List<CardAction>
                 {
                     new CardAction { Title = "1. Find out who is live now", Type = ActionTypes.ImBack, Value = "1" },

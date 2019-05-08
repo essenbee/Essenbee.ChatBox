@@ -4,6 +4,8 @@
 using System;
 using System.IO;
 using System.Linq;
+using Essenbee.ChatBox.Clients.GraphQL;
+using Essenbee.ChatBox.Core.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Bot.Builder;
@@ -49,6 +51,7 @@ namespace Essenbee.ChatBox
 
             services.AddSingleton(conversationState);
             services.AddSingleton(userState);
+            services.AddScoped<IChannelClient, ChannelGraphClient>();
 
             var appId = Configuration.GetSection("MicrosoftAppId").Value;
             var appPassword = Configuration.GetSection("MicrosoftAppPassword").Value;
