@@ -111,18 +111,23 @@ namespace Essenbee.ChatBox
                         await DisplayMainMenuAsync(turnContext, cancellationToken);
                         break;
                     case DialogTurnStatus.Waiting:
-                        await dialogContext.ContinueDialogAsync(cancellationToken);
+                        results = await dialogContext.ContinueDialogAsync(cancellationToken);
+
+                        if (results != null && results.Status == DialogTurnStatus.Complete)
+                        {
+                            await _userState.SaveChangesAsync(turnContext, false, cancellationToken);
+                            await DisplayMainMenuAsync(turnContext, cancellationToken);
+                        }
+
                         break;
                     case DialogTurnStatus.Complete:
-                        await _userState.SaveChangesAsync(turnContext, false, cancellationToken);
-                        
+                        await _userState.SaveChangesAsync(turnContext, false, cancellationToken);                       
                         await DisplayMainMenuAsync(turnContext, cancellationToken);
                         break;
                 }
 
                 await _converationState.SaveChangesAsync(turnContext);
                 await _userState.SaveChangesAsync(turnContext, false, cancellationToken);
-                // var userSelections = await UserSelectionsState.GetAsync(turnContext, () => new UserSelections(), cancellationToken);
             }
             else if (turnContext.Activity.Type == ActivityTypes.ConversationUpdate)
             {
