@@ -56,7 +56,11 @@ namespace Essenbee.ChatBox.Dialogs
             var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
             userSelections.StreamerName = (string)stepContext.Result;
 
-            await stepContext.Context.SendActivityAsync(ActivityTypes.Typing);
+            var typing = stepContext.Context.Activity.CreateReply();
+            typing.Type = ActivityTypes.Typing;
+            typing.Text = null;
+
+            await stepContext.Context.SendActivityAsync(typing);
 
             var streamName = userSelections.StreamerName.ToLower()
                 .Replace(" ", string.Empty);
