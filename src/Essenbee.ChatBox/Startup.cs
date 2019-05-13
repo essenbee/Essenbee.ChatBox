@@ -9,6 +9,7 @@ using Essenbee.ChatBox.Core.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.AI.QnA;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Configuration;
@@ -36,6 +37,11 @@ namespace Essenbee.ChatBox
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
                 .AddEnvironmentVariables();
 
+            if (env.IsDevelopment())
+            {
+                builder.AddUserSecrets<Startup>();
+            }
+
             Configuration = builder.Build();
         }
 
@@ -56,6 +62,26 @@ namespace Essenbee.ChatBox
             var appId = Configuration.GetSection("MicrosoftAppId").Value;
             var appPassword = Configuration.GetSection("MicrosoftAppPassword").Value;
 
+            // Create and register a QnA service
+            services.AddSingleton(sp =>
+            {
+                var qnaOptions = float.TryParse("0.4F", out float scoreThreshold)
+                    ? new QnAMakerOptions
+                    {
+                        ScoreThreshold = scoreThreshold,
+                        Top = 1
+                    } : null;
+
+                return new QnAMaker(
+                    new QnAMakerEndpoint
+                    {
+                        EndpointKey = Configuration["KBEndpointKey"],
+                        Host = Configuration["KBHost"],
+                        KnowledgeBaseId = Configuration["KnowledgeBaseId"],
+                    },
+                    qnaOptions);
+            });
+
             services.AddBot<ChatBoxBot>(options =>
            {
                options.CredentialProvider = new SimpleCredentialProvider(appId, appPassword);
@@ -68,6 +94,8 @@ namespace Essenbee.ChatBox
                {
                    logger.LogError($"Exception caught : {exception}");
                    await context.SendActivityAsync("Sorry, it looks like something went wrong.");
+                   await context.SendActivityAsync("Type 'menu' and press Enter to continue.");
+                   await conversationState.DeleteAsync(context);
                };
            });
         }

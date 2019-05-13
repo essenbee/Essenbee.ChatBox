@@ -25,7 +25,7 @@ namespace Essenbee.ChatBox
                     // There are other logging options available:
                     // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-2.1
                     // logging.AddDebug();
-                    // logging.AddConsole();
+                    logging.AddConsole();
                 })
 
                 // Logging Options.

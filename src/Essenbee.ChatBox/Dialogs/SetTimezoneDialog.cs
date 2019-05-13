@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Essenbee.ChatBox.Dialogs
 {
-    public class SetTimezoneDialog : ComponentDialog
+    public class SetTimezoneDialog : CancelAndHelpDialog
     {
         public IStatePropertyAccessor<UserSelections> UserSelectionsState;
 

@@ -1,11 +1,13 @@
 ﻿using Essenbee.ChatBox.Core.Interfaces;
 using Essenbee.ChatBox.Dialogs;
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.AI.QnA;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,17 +18,19 @@ namespace Essenbee.ChatBox
         public IStatePropertyAccessor<DialogState> ConversationDialogState { get; set; }
         public IStatePropertyAccessor<UserSelections> UserSelectionsState { get; set; }
 
+        private QnAMaker QnA { get; } = null;
+
         private readonly ConversationState _converationState;
         private readonly UserState _userState;
         private readonly ILogger _logger;
         private DialogSet _dialogs;
-
+        
         private const string WelcomeMessage = @"Welcome to the ChatBox. 
                                         This bot can help you find out about 
                                         live coding streams on Twitch!";
 
         public ChatBoxBot(ConversationState conversationState, UserState userState, IChannelClient client,
-            ILoggerFactory loggerFactory)
+            QnAMaker qna, ILoggerFactory loggerFactory)
         {
             if (conversationState == null)
             {
@@ -40,6 +44,7 @@ namespace Essenbee.ChatBox
 
             _userState = userState;
             _converationState = conversationState;
+            QnA = qna;
             ConversationDialogState = _converationState.CreateProperty<DialogState>($"{nameof(ChatBox)}.ConversationDialogState");
             UserSelectionsState = _userState.CreateProperty<UserSelections>($"{nameof(ChatBox)}.UserSelectionsState");
 
@@ -98,6 +103,13 @@ namespace Essenbee.ChatBox
                                     await dialogContext.BeginDialogAsync("setTimezoneIntent", cancellationToken);
                                     break;
                                 default:
+                                    var answers = await QnA.GetAnswersAsync(turnContext);
+
+                                    if (answers.Any())
+                                    {
+                                        await turnContext.SendActivityAsync(answers[0].Answer);
+                                    }
+
                                     await turnContext.SendActivityAsync("Please select a menu option");
                                     await DisplayMainMenuAsync(turnContext, cancellationToken);
                                     break;
