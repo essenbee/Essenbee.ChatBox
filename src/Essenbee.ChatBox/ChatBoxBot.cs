@@ -123,6 +123,7 @@ namespace Essenbee.ChatBox
                         break;
                     case DialogTurnStatus.Waiting:
                         results = await dialogContext.ContinueDialogAsync(cancellationToken);
+                        turnContext.Activity.Text = string.Empty;
 
                         if (results != null && results.Status == DialogTurnStatus.Complete)
                         {
