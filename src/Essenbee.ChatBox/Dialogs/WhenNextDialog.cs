@@ -49,21 +49,20 @@ namespace Essenbee.ChatBox.Dialogs
         {
             var streamerName = stepContext.Options as string;
 
-            if (!string.IsNullOrWhiteSpace(streamerName))
+            if (string.IsNullOrWhiteSpace(streamerName))
             {
-                var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
-                userSelections.StreamerName = streamerName;
-                await UserSelectionsState.SetAsync(stepContext.Context, userSelections, cancellationToken);
-
-                return await stepContext.NextAsync(cancellationToken);
+                return await stepContext.PromptAsync("streamer-name", new PromptOptions
+                    {
+                        Prompt = MessageFactory.Text("Please enter the name of the streamer you are interested in")
+                    }, 
+                    cancellationToken);
             }
 
-            return await stepContext.PromptAsync("streamer-name", new PromptOptions
-            {
+            var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
+            userSelections.StreamerName = streamerName;
+            await UserSelectionsState.SetAsync(stepContext.Context, userSelections, cancellationToken);
 
-                Prompt = MessageFactory.Text("Please enter the name of the streamer you are interested in")
-            },
-                            cancellationToken);
+            return await stepContext.NextAsync(cancellationToken);
         }
 
         private async Task<DialogTurnResult> GetStreamerInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)

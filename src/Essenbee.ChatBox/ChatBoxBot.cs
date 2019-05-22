@@ -1,14 +1,13 @@
 ﻿using Essenbee.ChatBox.Core.Interfaces;
 using Essenbee.ChatBox.Dialogs;
-using Essenbee.ChatBox.Extensions;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.AI.Luis;
 using Microsoft.Bot.Builder.AI.QnA;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -186,15 +185,23 @@ namespace Essenbee.ChatBox
                         intentMatched = true;
                         var streamerName = string.Empty;
 
-                        if (recognizerResult.Entities.HasValues)
+                        try
                         {
-                            streamerName = recognizerResult.Entities
-                                ?.Last
-                                ?.Children()
-                                .FirstOrDefault()
-                                ?.Values<string>()
-                                .FirstOrDefault() ?? string.Empty;
+                            if (recognizerResult.Entities.HasValues)
+                            {
+                                streamerName = recognizerResult.Entities
+                                    ?.Last
+                                    ?.Children()
+                                    .FirstOrDefault()
+                                    ?.Values<string>()
+                                    .FirstOrDefault() ?? string.Empty;
+                            }
                         }
+                        catch (Exception ex)
+                        {
+                            _logger.LogTrace($"Trying to determine streamer name: {ex.Message}");
+                        }
+
                         await dialogContext.BeginDialogAsync("whenNextIntent",
                             streamerName,
                             cancellationToken);
