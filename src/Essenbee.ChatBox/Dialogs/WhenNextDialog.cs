@@ -45,53 +45,76 @@ namespace Essenbee.ChatBox.Dialogs
             return await stepContext.BeginDialogAsync("setTimezoneIntent", cancellationToken);
         }
 
-        private async Task<DialogTurnResult> GetStreamerNameStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken) => await stepContext.PromptAsync("streamer-name", new PromptOptions
+        private async Task<DialogTurnResult> GetStreamerNameStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            Prompt = MessageFactory.Text("Please enter the name of the streamer you are interested in")
-        },
-                cancellationToken);
+            var streamerName = stepContext.Options as string;
+
+            if (!string.IsNullOrWhiteSpace(streamerName))
+            {
+                var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
+                userSelections.StreamerName = streamerName;
+                await UserSelectionsState.SetAsync(stepContext.Context, userSelections, cancellationToken);
+
+                return await stepContext.NextAsync(cancellationToken);
+            }
+
+            return await stepContext.PromptAsync("streamer-name", new PromptOptions
+            {
+
+                Prompt = MessageFactory.Text("Please enter the name of the streamer you are interested in")
+            },
+                            cancellationToken);
+        }
 
         private async Task<DialogTurnResult> GetStreamerInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
 
-            if (stepContext.Result is string)
+            if (string.IsNullOrWhiteSpace(userSelections.StreamerName))
             {
-                userSelections.StreamerName = (string)stepContext.Result;
-
-                if (!string.IsNullOrWhiteSpace(userSelections.StreamerName))
+                if (stepContext.Result is string)
                 {
-                    var typing = stepContext.Context.Activity.CreateReply();
-                    typing.Type = ActivityTypes.Typing;
-                    typing.Text = null;
+                    userSelections.StreamerName = (string)stepContext.Result;
+                }
+            }
 
-                    await stepContext.Context.SendActivityAsync(typing);
+            if (!string.IsNullOrWhiteSpace(userSelections.StreamerName))
+            {
+                var typing = stepContext.Context.Activity.CreateReply();
+                typing.Type = ActivityTypes.Typing;
+                typing.Text = null;
 
-                    var streamName = userSelections.StreamerName.ToLower()
-                        .Replace(" ", string.Empty);
+                await stepContext.Context.SendActivityAsync(typing);
 
-                    try
+                var streamName = userSelections.StreamerName.ToLower()
+                    .Replace(" ", string.Empty);
+
+                try
+                {
+                    var channel = await _client.GetChannelByName(streamName, userSelections.TimeZone);
+
+                    if (channel != null)
                     {
-                        var channel = await _client.GetChannelByName(streamName, userSelections.TimeZone);
-
-                        if (channel != null)
-                        {
-                            var reply = stepContext.Context.Activity.CreateReply();
-                            reply.Attachments = new List<Attachment> { ChannelDataCard.Create(channel) };
-                            await stepContext.Context.SendActivityAsync(reply, cancellationToken);
-                        }
-                        else
-                        {
-                            await stepContext.Context.SendActivityAsync(
-                                MessageFactory.Text($"I'm sorry, but I could not find {userSelections.StreamerName} in the Dev Streams database"));
-                        }
+                        var reply = stepContext.Context.Activity.CreateReply();
+                        reply.Attachments = new List<Attachment> { ChannelDataCard.Create(channel) };
+                        await stepContext.Context.SendActivityAsync(reply, cancellationToken);
                     }
-                    catch (Exception)
+                    else
                     {
                         await stepContext.Context.SendActivityAsync(
-                                MessageFactory.Text($"I'm sorry, but I am having problems talking to the Dev Streams database."));
+                            MessageFactory.Text($"I'm sorry, but I could not find {userSelections.StreamerName} in the Dev Streams database"));
                     }
                 }
+                catch (Exception)
+                {
+                    await stepContext.Context.SendActivityAsync(
+                            MessageFactory.Text($"I'm sorry, but I am having problems talking to the Dev Streams database."));
+                }
+            }
+            else
+            {
+                await stepContext.Context.SendActivityAsync(
+                    MessageFactory.Text($"I'm sorry, but I could not find that streamer in the Dev Streams database"));
             }
 
             return await stepContext.EndDialogAsync(cancellationToken);

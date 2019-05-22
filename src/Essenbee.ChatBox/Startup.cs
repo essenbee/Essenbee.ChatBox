@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.AI.QnA;
+using Microsoft.Bot.Builder.AI.Luis;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Configuration;
@@ -80,6 +81,27 @@ namespace Essenbee.ChatBox
                         KnowledgeBaseId = Configuration["KnowledgeBaseId"],
                     },
                     qnaOptions);
+            });
+
+            // Create and register a LUIS recognizer.
+            services.AddSingleton(sp =>
+            {
+                // Set up Luis
+                var luisApp = new LuisApplication(
+                    applicationId: Configuration["LUISAppId"],
+                    endpointKey: Configuration["LUISKey"],
+                    endpoint: Configuration["LUISEndpoint"]);
+
+                // Specify LUIS options. These may vary for your bot.
+                var luisPredictionOptions = new LuisPredictionOptions
+                {
+                    IncludeAllIntents = true,
+                };
+
+                return new LuisRecognizer(
+                    application: luisApp,
+                    predictionOptions: luisPredictionOptions,
+                    includeApiResults: true);
             });
 
             services.AddBot<ChatBoxBot>(options =>

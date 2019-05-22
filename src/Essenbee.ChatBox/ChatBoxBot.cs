@@ -1,10 +1,13 @@
 ﻿using Essenbee.ChatBox.Core.Interfaces;
 using Essenbee.ChatBox.Dialogs;
+using Essenbee.ChatBox.Extensions;
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.AI.Luis;
 using Microsoft.Bot.Builder.AI.QnA;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +22,7 @@ namespace Essenbee.ChatBox
         public IStatePropertyAccessor<UserSelections> UserSelectionsState { get; set; }
 
         private QnAMaker QnA { get; } = null;
+        private LuisRecognizer Recognizer { get; } = null;
 
         private readonly ConversationState _converationState;
         private readonly UserState _userState;
@@ -30,7 +34,7 @@ namespace Essenbee.ChatBox
                                         live coding streams on Twitch!";
 
         public ChatBoxBot(ConversationState conversationState, UserState userState, IChannelClient client,
-            QnAMaker qna, ILoggerFactory loggerFactory)
+            QnAMaker qna, LuisRecognizer luis, ILoggerFactory loggerFactory)
         {
             if (conversationState == null)
             {
@@ -45,6 +49,7 @@ namespace Essenbee.ChatBox
             _userState = userState;
             _converationState = conversationState;
             QnA = qna;
+            Recognizer = luis;
             ConversationDialogState = _converationState.CreateProperty<DialogState>($"{nameof(ChatBox)}.ConversationDialogState");
             UserSelectionsState = _userState.CreateProperty<UserSelections>($"{nameof(ChatBox)}.UserSelectionsState");
 
@@ -103,15 +108,21 @@ namespace Essenbee.ChatBox
                                     await dialogContext.BeginDialogAsync("setTimezoneIntent", cancellationToken);
                                     break;
                                 default:
-                                    var answers = await QnA.GetAnswersAsync(turnContext);
+                                    var intentMatched = await ProcessLuisResult(turnContext, dialogContext, cancellationToken);
 
-                                    if (answers.Any())
+                                    if (!intentMatched)
                                     {
-                                        await turnContext.SendActivityAsync(answers[0].Answer);
+                                        var answers = await QnA.GetAnswersAsync(turnContext);
+
+                                        if (answers.Any())
+                                        {
+                                            await turnContext.SendActivityAsync(answers[0].Answer);
+                                        }
+
+                                        await turnContext.SendActivityAsync("Please select a menu option");
+                                        await DisplayMainMenuAsync(turnContext, cancellationToken);
                                     }
 
-                                    await turnContext.SendActivityAsync("Please select a menu option");
-                                    await DisplayMainMenuAsync(turnContext, cancellationToken);
                                     break;
                             }
                         }
@@ -152,6 +163,50 @@ namespace Essenbee.ChatBox
             {
                 await turnContext.SendActivityAsync($"{turnContext.Activity.Type} event detected");
             }
+        }
+
+        private async Task<bool> ProcessLuisResult(ITurnContext turnContext, DialogContext dialogContext, CancellationToken cancellationToken)
+        {
+            var intentMatched = false;
+
+            var recognizerResult = await Recognizer.RecognizeAsync(turnContext, cancellationToken);
+            var topIntent = recognizerResult?.GetTopScoringIntent();
+            string strIntent = (topIntent != null) ? topIntent.Value.intent : string.Empty;
+            double dblIntentScore = (topIntent != null) ? topIntent.Value.score : 0.0;
+
+            if (dblIntentScore > 0.90)
+            {
+                switch (strIntent)
+                {
+                    case "Utilities_Help":
+                        intentMatched = true;
+                        await turnContext.SendActivityAsync("<here's some help>");
+                        break;
+                    case "WhenNext":
+                        intentMatched = true;
+                        var streamerName = string.Empty;
+
+                        if (recognizerResult.Entities.HasValues)
+                        {
+                            streamerName = recognizerResult.Entities
+                                ?.Last
+                                ?.Children()
+                                .FirstOrDefault()
+                                ?.Values<string>()
+                                .FirstOrDefault() ?? string.Empty;
+                        }
+                        await dialogContext.BeginDialogAsync("whenNextIntent",
+                            streamerName,
+                            cancellationToken);
+                        break;
+                    case "SetTimezone":
+                        intentMatched = true;
+                        await dialogContext.BeginDialogAsync("setTimezoneIntent", cancellationToken);
+                        break;
+                }
+            }
+
+            return intentMatched;
         }
 
         private async Task SendWelcomeMessageAsync(ITurnContext turnContext, CancellationToken cancellationToken)
