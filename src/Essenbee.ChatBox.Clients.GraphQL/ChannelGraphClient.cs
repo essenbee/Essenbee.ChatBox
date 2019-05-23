@@ -55,9 +55,29 @@ namespace Essenbee.ChatBox.Clients.GraphQL
             throw new GraphQLException(new GraphQLError { Message = $"Error: {error.Message}" });
          }
 
-        public async Task<List<ChannelModel>> GetLiveChannels(string userTimeZone)
+        public async Task<List<ChannelModel>> GetLiveChannels()
         {
-            throw new NotImplementedException();
+            var query = new GraphQLRequest
+            {
+                Query = @"query getLiveChannels {
+                            liveChannels {
+                            name uri
+                            tags { 
+                                id name
+                            }
+                        }
+                }"
+            };
+
+            var response = await _client.PostAsync(query);
+
+            if (response.Errors is null)
+            {
+                return response.GetDataFieldAs<List<ChannelModel>>("liveChannels");
+            }
+
+            var error = response.Errors.First();
+            throw new GraphQLException(new GraphQLError { Message = $"Error: {error.Message}" });
         }
     }
 }

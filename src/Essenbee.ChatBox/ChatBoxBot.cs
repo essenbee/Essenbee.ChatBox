@@ -1,4 +1,5 @@
-﻿using Essenbee.ChatBox.Core.Interfaces;
+﻿using Essenbee.ChatBox.Cards;
+using Essenbee.ChatBox.Core.Interfaces;
 using Essenbee.ChatBox.Dialogs;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.AI.Luis;
@@ -64,6 +65,7 @@ namespace Essenbee.ChatBox
 
             _dialogs.Add(new WhenNextDialog("whenNextIntent", UserSelectionsState, client));
             _dialogs.Add(new SetTimezoneDialog("setTimezoneIntent", UserSelectionsState));
+            _dialogs.Add(new LiveNowDialog("liveNowIntent", client));
             _dialogs.Add(new WaterfallDialog("dummy", dummySteps));
         }
 
@@ -97,7 +99,7 @@ namespace Essenbee.ChatBox
                             switch (userChoice)
                             {
                                 case "1":
-                                    await dialogContext.BeginDialogAsync("dummy", cancellationToken);
+                                    await dialogContext.BeginDialogAsync("liveNowIntent", cancellationToken);
                                     break;
                                 case "2":
                                     await dialogContext.BeginDialogAsync("whenNextIntent", options, cancellationToken);
@@ -175,6 +177,9 @@ namespace Essenbee.ChatBox
                     case "Utilities_Help":
                         intentMatched = "help";
                         break;
+                    case "LiveNow":
+                        intentMatched = "1";
+                        break;
                     case "WhenNext":
                         intentMatched = "2";
 
@@ -227,19 +232,7 @@ namespace Essenbee.ChatBox
                 ? $"**{userSelections.TimeZone}**"
                 : "-";
 
-            var heroCard = new HeroCard
-            {
-                Title = "DevStreams Chat Box",
-                Subtitle = "What would you like to do?",
-                Text = $"Your selected time zone: {selectedTimeZone}",
-                Buttons = new List<CardAction>
-                {
-                    new CardAction { Title = "1. Find out who is live now", Type = ActionTypes.ImBack, Value = "1" },
-                    new CardAction { Title = "2. Find out when a streamer is broadcasting next", Type = ActionTypes.ImBack, Value = "2" },
-                    new CardAction { Title = "3. Discover live coding streams covering things I am interested in", Type = ActionTypes.ImBack, Value = "3" },
-                    new CardAction { Title = "4. Set/reset my time zone", Type = ActionTypes.ImBack, Value = "4" },
-                }
-            };
+            var heroCard = MainMenuCard.Create(selectedTimeZone);
 
             var reply = turnContext.Activity.CreateReply();
             reply.Attachments = new List<Attachment> { heroCard.ToAttachment() };
