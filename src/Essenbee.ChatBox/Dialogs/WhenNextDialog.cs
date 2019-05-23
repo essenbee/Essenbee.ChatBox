@@ -47,7 +47,7 @@ namespace Essenbee.ChatBox.Dialogs
 
         private async Task<DialogTurnResult> GetStreamerNameStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var streamerName = stepContext.Options as string;
+            var streamerName = stepContext.Options as string ?? string.Empty;
 
             if (string.IsNullOrWhiteSpace(streamerName))
             {
@@ -58,23 +58,24 @@ namespace Essenbee.ChatBox.Dialogs
                     cancellationToken);
             }
 
-            var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
-            userSelections.StreamerName = streamerName;
-            await UserSelectionsState.SetAsync(stepContext.Context, userSelections, cancellationToken);
-
             return await stepContext.NextAsync(cancellationToken);
         }
 
         private async Task<DialogTurnResult> GetStreamerInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
+            var streamerName = stepContext.Options as string ?? string.Empty;
 
-            if (string.IsNullOrWhiteSpace(userSelections.StreamerName))
+            if (string.IsNullOrWhiteSpace(streamerName))
             {
                 if (stepContext.Result is string)
                 {
                     userSelections.StreamerName = (string)stepContext.Result;
                 }
+            }
+            else
+            {
+                userSelections.StreamerName = streamerName;
             }
 
             if (!string.IsNullOrWhiteSpace(userSelections.StreamerName))
