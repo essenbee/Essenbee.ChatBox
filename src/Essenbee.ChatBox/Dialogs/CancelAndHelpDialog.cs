@@ -63,6 +63,7 @@ namespace Essenbee.ChatBox.Dialogs
                     case "quit":
                     case "stop":
                     case "menu":
+                    case "exit":
                         await innerDialogContext.Context.SendActivityAsync($"Cancelling...", cancellationToken: cancellationToken);
                         return await innerDialogContext.CancelAllDialogsAsync();
                 }

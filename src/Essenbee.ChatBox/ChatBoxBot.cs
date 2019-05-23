@@ -28,21 +28,21 @@ namespace Essenbee.ChatBox
         private readonly ILogger _logger;
         private DialogSet _dialogs;
         
-        private const string WelcomeMessage = @"Welcome to the ChatBox. 
-                                        This bot can help you find out about 
-                                        live coding streams on Twitch!";
+        private const string WelcomeMessage = @"Welcome to the DevStreams ChatBox! 
+                                        This bot can help you find out about live coding streams on Twitch.
+                                        You can type 'help' at any time or 'menu' to return to the Main Menu.";
 
         public ChatBoxBot(ConversationState conversationState, UserState userState, IChannelClient client,
             QnAMaker qna, LuisRecognizer luis, ILoggerFactory loggerFactory)
         {
             if (conversationState == null)
             {
-                throw new System.ArgumentNullException(nameof(conversationState));
+                throw new ArgumentNullException(nameof(conversationState));
             }
 
             if (loggerFactory == null)
             {
-                throw new System.ArgumentNullException(nameof(loggerFactory));
+                throw new ArgumentNullException(nameof(loggerFactory));
             }
 
             _userState = userState;
@@ -83,8 +83,10 @@ namespace Essenbee.ChatBox
                     activity.Text = activity.Value.ToString();
                 }
 
-                var userChoice = turnContext.Activity.Text;
-                var responseMessage = $"You chose: '{turnContext.Activity.Text}'\n";
+                var (intentMatched, options) = await ProcessLuisResult(turnContext, cancellationToken);
+                var userChoice = string.IsNullOrWhiteSpace(intentMatched)
+                    ? turnContext.Activity.Text
+                    : intentMatched;
 
                 switch (results.Status)
                 {
@@ -98,7 +100,7 @@ namespace Essenbee.ChatBox
                                     await dialogContext.BeginDialogAsync("dummy", cancellationToken);
                                     break;
                                 case "2":
-                                    await dialogContext.BeginDialogAsync("whenNextIntent", cancellationToken);
+                                    await dialogContext.BeginDialogAsync("whenNextIntent", options, cancellationToken);
                                     break;
                                 case "3":
                                     await dialogContext.BeginDialogAsync("dummy", cancellationToken);
@@ -106,11 +108,10 @@ namespace Essenbee.ChatBox
                                 case "4":
                                     await dialogContext.BeginDialogAsync("setTimezoneIntent", cancellationToken);
                                     break;
+                                case "help":
+                                    await turnContext.SendActivityAsync("<here's some help>");
+                                    break;
                                 default:
-                                    var intentMatched = await ProcessLuisResult(turnContext, dialogContext, cancellationToken);
-
-                                    if (!intentMatched)
-                                    {
                                         var answers = await QnA.GetAnswersAsync(turnContext);
 
                                         if (answers.Any())
@@ -119,8 +120,6 @@ namespace Essenbee.ChatBox
                                         }
 
                                         await turnContext.SendActivityAsync("Please select a menu option");
-                                        await DisplayMainMenuAsync(turnContext, cancellationToken);
-                                    }
 
                                     break;
                             }
@@ -129,27 +128,21 @@ namespace Essenbee.ChatBox
                         break;
 
                     case DialogTurnStatus.Cancelled:
-                        await DisplayMainMenuAsync(turnContext, cancellationToken);
                         break;
                     case DialogTurnStatus.Waiting:
-                        results = await dialogContext.ContinueDialogAsync(cancellationToken);
-                        turnContext.Activity.Text = string.Empty;
-
-                        if (results != null && results.Status == DialogTurnStatus.Complete)
-                        {
-                            await _userState.SaveChangesAsync(turnContext, false, cancellationToken);
-                            await DisplayMainMenuAsync(turnContext, cancellationToken);
-                        }
-
+                        await dialogContext.ContinueDialogAsync(cancellationToken);
                         break;
                     case DialogTurnStatus.Complete:
-                        await _userState.SaveChangesAsync(turnContext, false, cancellationToken);                       
-                        await DisplayMainMenuAsync(turnContext, cancellationToken);
                         break;
                 }
 
                 await _converationState.SaveChangesAsync(turnContext);
                 await _userState.SaveChangesAsync(turnContext, false, cancellationToken);
+
+                if (dialogContext.ActiveDialog is null)
+                {
+                    await DisplayMainMenuAsync(turnContext, cancellationToken);
+                }
             }
             else if (turnContext.Activity.Type == ActivityTypes.ConversationUpdate)
             {
@@ -164,9 +157,11 @@ namespace Essenbee.ChatBox
             }
         }
 
-        private async Task<bool> ProcessLuisResult(ITurnContext turnContext, DialogContext dialogContext, CancellationToken cancellationToken)
+        private async Task<(string intent, string options)> ProcessLuisResult(ITurnContext turnContext, 
+            CancellationToken cancellationToken)
         {
-            var intentMatched = false;
+            var intentMatched = string.Empty;
+            var options = string.Empty;
 
             var recognizerResult = await Recognizer.RecognizeAsync(turnContext, cancellationToken);
             var topIntent = recognizerResult?.GetTopScoringIntent();
@@ -178,18 +173,16 @@ namespace Essenbee.ChatBox
                 switch (strIntent)
                 {
                     case "Utilities_Help":
-                        intentMatched = true;
-                        await turnContext.SendActivityAsync("<here's some help>");
+                        intentMatched = "help";
                         break;
                     case "WhenNext":
-                        intentMatched = true;
-                        var streamerName = string.Empty;
+                        intentMatched = "2";
 
                         try
                         {
                             if (recognizerResult.Entities.HasValues)
                             {
-                                streamerName = recognizerResult.Entities
+                                options = recognizerResult.Entities
                                     ?.Last
                                     ?.Children()
                                     .FirstOrDefault()
@@ -202,18 +195,14 @@ namespace Essenbee.ChatBox
                             _logger.LogTrace($"Trying to determine streamer name: {ex.Message}");
                         }
 
-                        await dialogContext.BeginDialogAsync("whenNextIntent",
-                            streamerName,
-                            cancellationToken);
                         break;
                     case "SetTimezone":
-                        intentMatched = true;
-                        await dialogContext.BeginDialogAsync("setTimezoneIntent", cancellationToken);
+                        intentMatched = "4";
                         break;
                 }
             }
 
-            return intentMatched;
+            return (intentMatched, options);
         }
 
         private async Task SendWelcomeMessageAsync(ITurnContext turnContext, CancellationToken cancellationToken)
