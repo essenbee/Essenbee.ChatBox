@@ -1,6 +1,7 @@
 ﻿using Essenbee.ChatBox.Core.Interfaces;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
+using Microsoft.Bot.Schema;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,12 @@ namespace Essenbee.ChatBox.Dialogs
 
         private async Task<DialogTurnResult> GetLiveStreamsStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
+            var typing = stepContext.Context.Activity.CreateReply();
+            typing.Type = ActivityTypes.Typing;
+            typing.Text = null;
+
+            await stepContext.Context.SendActivityAsync(typing);
+
             try
             {
                 var channels = await _client.GetLiveChannels();
