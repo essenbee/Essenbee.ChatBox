@@ -28,9 +28,9 @@ namespace Essenbee.ChatBox.Dialogs
                 GetStreamerInfoStepAsync,
             };
 
-            AddDialog(new WaterfallDialog("whenNextIntent", whenNextSteps));
-            AddDialog(new SetTimezoneDialog("setTimezoneIntent", UserSelectionsState));
-            AddDialog(new TextPrompt("streamer-name"));
+            AddDialog(new WaterfallDialog(Constants.WhenNextIntent, whenNextSteps));
+            AddDialog(new SetTimezoneDialog(Constants.SetTimezoneIntent, UserSelectionsState));
+            AddDialog(new TextPrompt(Constants.StreamerNamePrompt));
         }
 
         private async Task<DialogTurnResult> GetUsersTimezoneStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -42,7 +42,7 @@ namespace Essenbee.ChatBox.Dialogs
                 return await stepContext.NextAsync();
             }
 
-            return await stepContext.BeginDialogAsync("setTimezoneIntent", cancellationToken);
+            return await stepContext.BeginDialogAsync(Constants.SetTimezoneIntent, cancellationToken);
         }
 
         private async Task<DialogTurnResult> GetStreamerNameStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -51,7 +51,7 @@ namespace Essenbee.ChatBox.Dialogs
 
             if (string.IsNullOrWhiteSpace(streamerName))
             {
-                return await stepContext.PromptAsync("streamer-name", new PromptOptions
+                return await stepContext.PromptAsync(Constants.StreamerNamePrompt, new PromptOptions
                     {
                         Prompt = MessageFactory.Text("Please enter the name of the streamer you are interested in")
                     }, 

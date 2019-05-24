@@ -3,8 +3,6 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,7 +22,7 @@ namespace Essenbee.ChatBox.Dialogs
                 GetLiveStreamsStepAsync,
             };
 
-            AddDialog(new WaterfallDialog("liveNowIntent", steps));
+            AddDialog(new WaterfallDialog(Constants.LiveNow, steps));
         }
 
         private async Task<DialogTurnResult> GetLiveStreamsStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -57,7 +55,7 @@ namespace Essenbee.ChatBox.Dialogs
                 else
                 {
                     await stepContext.Context.SendActivityAsync(
-                        MessageFactory.Text($"There are no DevStreams live coding streams current broadcasting."));
+                        MessageFactory.Text($"There are no DevStreams live coding streams currently broadcasting."));
                 }
             }
             catch (Exception ex)

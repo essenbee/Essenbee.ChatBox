@@ -19,14 +19,14 @@ namespace Essenbee.ChatBox.Dialogs
                 GetUsersTimezoneStepAsync,
             };
 
-            AddDialog(new WaterfallDialog("setTimezoneIntent", setTimezoneSteps));
-            AddDialog(new ChooseCountryDialog("chooseCountryIntent", userSelectionsState));
-            AddDialog(new ChoseTimezoneDialog("chooseTimezoneIntent", userSelectionsState));
+            AddDialog(new WaterfallDialog(Constants.SetTimezoneIntent, setTimezoneSteps));
+            AddDialog(new ChooseCountryDialog(Constants.ChooseCountryIntent, userSelectionsState));
+            AddDialog(new ChoseTimezoneDialog(Constants.ChooseTimeZoneIntent, userSelectionsState));
         }
 
         private async Task<DialogTurnResult> GetUsersCountryStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            return await stepContext.BeginDialogAsync("chooseCountryIntent", cancellationToken);
+            return await stepContext.BeginDialogAsync(Constants.ChooseCountryIntent, cancellationToken);
         }
 
         private async Task<DialogTurnResult> GetUsersTimezoneStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -35,10 +35,10 @@ namespace Essenbee.ChatBox.Dialogs
 
             if (!string.IsNullOrWhiteSpace(userSelections.CountryCode))
             {
-                return await stepContext.BeginDialogAsync("chooseTimezoneIntent", cancellationToken);
+                return await stepContext.BeginDialogAsync(Constants.ChooseTimeZoneIntent, cancellationToken);
             }
 
-            return await stepContext.ReplaceDialogAsync("setTimezoneIntent", cancellationToken);
+            return await stepContext.ReplaceDialogAsync(Constants.SetTimezoneIntent, cancellationToken);
         }
     }
 }

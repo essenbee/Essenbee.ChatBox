@@ -36,16 +36,6 @@ namespace Essenbee.ChatBox
         public ChatBoxBot(ConversationState conversationState, UserState userState, IChannelClient client,
             QnAMaker qna, LuisRecognizer luis, ILoggerFactory loggerFactory)
         {
-            if (conversationState == null)
-            {
-                throw new ArgumentNullException(nameof(conversationState));
-            }
-
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
-
             _userState = userState;
             _converationState = conversationState;
             QnA = qna;
@@ -54,8 +44,6 @@ namespace Essenbee.ChatBox
             UserSelectionsState = _userState.CreateProperty<UserSelections>($"{nameof(ChatBox)}.UserSelectionsState");
 
             _logger = loggerFactory.CreateLogger<ChatBoxBot>();
-            _logger.LogTrace("Turn start.");
-
             _dialogs = new DialogSet(ConversationDialogState);
 
             var dummySteps = new WaterfallStep[]
@@ -63,9 +51,9 @@ namespace Essenbee.ChatBox
                 DummyStepAsync,
             };
 
-            _dialogs.Add(new WhenNextDialog("whenNextIntent", UserSelectionsState, client));
-            _dialogs.Add(new SetTimezoneDialog("setTimezoneIntent", UserSelectionsState));
-            _dialogs.Add(new LiveNowDialog("liveNowIntent", client));
+            _dialogs.Add(new WhenNextDialog(Constants.WhenNextIntent, UserSelectionsState, client));
+            _dialogs.Add(new SetTimezoneDialog(Constants.SetTimezoneIntent, UserSelectionsState));
+            _dialogs.Add(new LiveNowDialog(Constants.LiveNow, client));
             _dialogs.Add(new WaterfallDialog("dummy", dummySteps));
         }
 
@@ -78,7 +66,7 @@ namespace Essenbee.ChatBox
 
                 var channelData = JObject.Parse(turnContext.Activity.ChannelData.ToString());
 
-                if (channelData.ContainsKey("postBack"))
+                if (channelData.ContainsKey(Constants.PostBack))
                 {
                     // This is from an adaptive card postback
                     var activity = turnContext.Activity;
@@ -99,22 +87,29 @@ namespace Essenbee.ChatBox
                             switch (userChoice)
                             {
                                 case "1":
-                                    await dialogContext.BeginDialogAsync("liveNowIntent", cancellationToken);
+                                    await dialogContext.BeginDialogAsync(Constants.LiveNow, cancellationToken);
                                     break;
                                 case "2":
-                                    await dialogContext.BeginDialogAsync("whenNextIntent", options, cancellationToken);
+                                    await dialogContext.BeginDialogAsync(Constants.WhenNextIntent, options, cancellationToken);
                                     break;
                                 case "3":
                                     await dialogContext.BeginDialogAsync("dummy", cancellationToken);
                                     break;
                                 case "4":
-                                    await dialogContext.BeginDialogAsync("setTimezoneIntent", cancellationToken);
+                                    await dialogContext.BeginDialogAsync(Constants.SetTimezoneIntent, cancellationToken);
                                     break;
                                 case "help":
                                     await turnContext.SendActivityAsync("<here's some help>");
                                     break;
+                                case "menu":
+                                    break;
                                 default:
-                                        var answers = await QnA.GetAnswersAsync(turnContext);
+                                    var typing = turnContext.Activity.CreateReply();
+                                    typing.Type = ActivityTypes.Typing;
+                                    typing.Text = null;
+                                    await turnContext.SendActivityAsync(typing);
+
+                                    var answers = await QnA.GetAnswersAsync(turnContext);
 
                                         if (answers.Any())
                                         {

@@ -27,8 +27,8 @@ namespace Essenbee.ChatBox.Dialogs
                 PersistDataStepAsync,
             };
 
-            AddDialog(new WaterfallDialog("chooseCountryIntent", setTimezoneSteps));
-            AddDialog(new TextPrompt("country"));
+            AddDialog(new WaterfallDialog(Constants.ChooseCountryIntent, setTimezoneSteps));
+            AddDialog(new TextPrompt(Constants.CountryPrompt));
         }
 
         private async Task<DialogTurnResult> GetUsersCountryStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -48,7 +48,7 @@ namespace Essenbee.ChatBox.Dialogs
             reply.Attachments = new List<Attachment> { cardAttachment };
             await stepContext.Context.SendActivityAsync(reply, cancellationToken);
 
-            return await stepContext.PromptAsync("country",
+            return await stepContext.PromptAsync(Constants.CountryPrompt,
                 new PromptOptions
                 {
                     Prompt = new Activity
@@ -73,7 +73,7 @@ namespace Essenbee.ChatBox.Dialogs
                 return await stepContext.EndDialogAsync(cancellationToken);
             }
 
-            return await stepContext.ReplaceDialogAsync("chooseCountryIntent", cancellationToken);
+            return await stepContext.ReplaceDialogAsync(Constants.ChooseCountryIntent, cancellationToken);
         }
 
         private string GetCountryCode(WaterfallStepContext stepContext)

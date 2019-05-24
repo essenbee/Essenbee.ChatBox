@@ -26,8 +26,8 @@ namespace Essenbee.ChatBox.Dialogs
                 PersistDataStepAsync,
             };
 
-            AddDialog(new WaterfallDialog("chooseTimezoneIntent", setTimezoneSteps));
-            AddDialog(new TextPrompt("timezone"));
+            AddDialog(new WaterfallDialog(Constants.ChooseTimeZoneIntent, setTimezoneSteps));
+            AddDialog(new TextPrompt(Constants.TimezonePrompt));
         }
 
         private async Task<DialogTurnResult> GetUsersTimezoneStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -48,7 +48,7 @@ namespace Essenbee.ChatBox.Dialogs
                 reply.Attachments = new List<Attachment> { cardAttachment };
                 await stepContext.Context.SendActivityAsync(reply, cancellationToken);
 
-            return await stepContext.PromptAsync("timezone",
+            return await stepContext.PromptAsync(Constants.TimezonePrompt,
                     new PromptOptions
                     {
                         Prompt = new Activity
@@ -79,7 +79,7 @@ namespace Essenbee.ChatBox.Dialogs
                 }
             }
 
-            return await stepContext.ReplaceDialogAsync("chooseTimezoneIntent", cancellationToken);
+            return await stepContext.ReplaceDialogAsync(Constants.ChooseTimeZoneIntent, cancellationToken);
         }
     }
 }
