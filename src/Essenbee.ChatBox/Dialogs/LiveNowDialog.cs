@@ -1,8 +1,10 @@
-﻿using Essenbee.ChatBox.Core.Interfaces;
+﻿using Essenbee.ChatBox.Cards;
+using Essenbee.ChatBox.Core.Interfaces;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,16 +42,7 @@ namespace Essenbee.ChatBox.Dialogs
                 if (channels != null && channels.Count > 0)
                 {
                     var reply = stepContext.Context.Activity.CreateReply();
-                    //reply.Attachments = new List<Attachment> { ChannelDataCard.Create(channel) };
-
-                    var listOfStreams = new StringBuilder();
-
-                    foreach (var channel in channels)
-                    {
-                        listOfStreams.AppendLine($"{channel.Name} is live now ({channel.Uri})");
-                    }
-
-                    reply.Text = listOfStreams.ToString();
+                    reply.Attachments = new List<Attachment> { ChannelListCard.Create(channels, "Currently Live") };
                     await stepContext.Context.SendActivityAsync(reply, cancellationToken);
                 }
                 else

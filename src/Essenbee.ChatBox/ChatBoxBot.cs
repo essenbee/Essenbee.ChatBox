@@ -28,10 +28,8 @@ namespace Essenbee.ChatBox
         private readonly UserState _userState;
         private readonly ILogger _logger;
         private DialogSet _dialogs;
-        
-        private const string WelcomeMessage = @"Welcome to the DevStreams ChatBox! 
-                                        This bot can help you find out about live coding streams on Twitch.
-                                        You can type 'help' at any time or 'menu' to return to the Main Menu.";
+
+        private string WelcomeMessage = HelpText.Welcome;
 
         public ChatBoxBot(ConversationState conversationState, UserState userState, IChannelClient client,
             QnAMaker qna, LuisRecognizer luis, ILoggerFactory loggerFactory)
@@ -45,16 +43,10 @@ namespace Essenbee.ChatBox
 
             _logger = loggerFactory.CreateLogger<ChatBoxBot>();
             _dialogs = new DialogSet(ConversationDialogState);
-
-            var dummySteps = new WaterfallStep[]
-            {
-                DummyStepAsync,
-            };
-
             _dialogs.Add(new WhenNextDialog(Constants.WhenNextIntent, UserSelectionsState, client));
             _dialogs.Add(new SetTimezoneDialog(Constants.SetTimezoneIntent, UserSelectionsState));
             _dialogs.Add(new LiveNowDialog(Constants.LiveNow, client));
-            _dialogs.Add(new WaterfallDialog("dummy", dummySteps));
+            _dialogs.Add(new DiscoveryDialog(Constants.DiscoverIntent, client));
         }
 
         public async Task OnTurnAsync(ITurnContext turnContext, CancellationToken cancellationToken = default(CancellationToken))
@@ -93,13 +85,13 @@ namespace Essenbee.ChatBox
                                     await dialogContext.BeginDialogAsync(Constants.WhenNextIntent, options, cancellationToken);
                                     break;
                                 case "3":
-                                    await dialogContext.BeginDialogAsync("dummy", cancellationToken);
+                                    await dialogContext.BeginDialogAsync(Constants.DiscoverIntent, cancellationToken);
                                     break;
                                 case "4":
                                     await dialogContext.BeginDialogAsync(Constants.SetTimezoneIntent, cancellationToken);
                                     break;
                                 case "help":
-                                    await turnContext.SendActivityAsync("<here's some help>");
+                                    await turnContext.SendActivityAsync(HelpText.MainHelp);
                                     break;
                                 case "menu":
                                     break;
@@ -196,6 +188,9 @@ namespace Essenbee.ChatBox
                         }
 
                         break;
+                    case "DiscoverIntent":
+                        intentMatched = "3";
+                        break;
                     case "SetTimezone":
                         intentMatched = "4";
                         break;
@@ -233,14 +228,6 @@ namespace Essenbee.ChatBox
             reply.Attachments = new List<Attachment> { heroCard.ToAttachment() };
 
             await turnContext.SendActivityAsync(reply, cancellationToken);
-        }
-
-        private async Task<DialogTurnResult> DummyStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-            var selection = stepContext.Context.Activity.Text;
-            await stepContext.Context.
-                SendActivityAsync(MessageFactory.Text($"You selected {selection}"), cancellationToken);
-            return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
         }
     }
 }

@@ -79,5 +79,54 @@ namespace Essenbee.ChatBox.Clients.GraphQL
             var error = response.Errors.First();
             throw new GraphQLException(new GraphQLError { Message = $"Error: {error.Message}" });
         }
+
+        public async Task<List<TagModel>> GetTagsInUse()
+        {              
+            var query = new GraphQLRequest
+            {
+                Query = @"query getTagsInUse {
+	                        tagsInUse
+                            { id name }
+                        }"
+            };
+
+            var response = await _client.PostAsync(query);
+
+            if (response.Errors is null)
+            {
+                return response.GetDataFieldAs<List<TagModel>>("tagsInUse");
+            }
+
+            var error = response.Errors.First();
+            throw new GraphQLException(new GraphQLError { Message = $"Error: {error.Message}" });
+        }
+
+        public async Task<List<ChannelModel>> GetChannelsHavingTags(string tags)
+        {
+            var listOfTags = tags.Split(',').Select(int.Parse).ToList();
+            
+            var query = new GraphQLRequest
+            {
+                Query = @"query getChannelsHavingTags($tagIds: [ID]!) {
+                            channelsHavingTags (tagIds: $tagIds) {
+                            name uri
+                            tags { 
+                                id name
+                            }
+                        }
+                }",
+                Variables = new { tagIds = listOfTags }
+            };
+
+            var response = await _client.PostAsync(query);
+
+            if (response.Errors is null)
+            {
+                return response.GetDataFieldAs<List<ChannelModel>>("channelsHavingTags");
+            }
+
+            var error = response.Errors.First();
+            throw new GraphQLException(new GraphQLError { Message = $"Error: {error.Message}" });
+        }
     }
 }

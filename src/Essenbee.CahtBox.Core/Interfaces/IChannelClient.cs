@@ -9,5 +9,7 @@ namespace Essenbee.ChatBox.Core.Interfaces
     {
         Task<ChannelModel> GetChannelByName(string channelName, string userTimeZone);
         Task<List<ChannelModel>> GetLiveChannels();
+        Task<List<TagModel>> GetTagsInUse();
+        Task<List<ChannelModel>> GetChannelsHavingTags(string tags);
     }
 }

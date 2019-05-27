@@ -50,6 +50,7 @@ namespace Essenbee.ChatBox.Cards
             container.Items.Add(new AdaptiveTextBlock
             {
                 Text = $"**{channel.Name}** {nextStream}",
+                Wrap = true,
             });
 
             adaptiveCard.Body.Add(container);
