@@ -1,0 +1,10 @@
+version: 1.0.{build}
+image: Visual Studio 2019
+before_build:
+- cmd: >-
+    cd ./src
+
+    nuget restore
+build:
+  project: c:\projects\essenbee-chatbox\src\essenbee.chatbox.sln
+  verbosity: minimal
